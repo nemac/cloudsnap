@@ -44,6 +44,9 @@ around before being deleted.
     any snapshot for the volume (with CLOUDSNAP=true) which is older than
     `Retention` days, except that it will never delete the last snapshot for
     a volume.
+    
+Note: cloudsnap ignores case when looking for the above tags, so it doesn't
+matter how you capitalize them.
 
 ## Operating Frequency
 
