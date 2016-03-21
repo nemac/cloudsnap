@@ -62,7 +62,7 @@ def delete_snapshot(s):
 
 def create_snapshot(v):
     print "creating new snapshot of volume %s" % v['id']
-    system("cirrus ebs ss %s" % v['id'])
+    system("cirrus ebs ss %s --tags CLOUDSNAP=true" % v['id'])
 
 volumes = dictify_tags(json.loads(bash_command("cirrus -jj ebs ls")))
 snapshots = dictify_tags(json.loads(bash_command("cirrus -jj ebs listss")))
@@ -79,7 +79,7 @@ for v in backup_true_volumes0:
         print "warning: 'Retention' tag missing or bad value for volume %s; not backing up this volume" % v['id']
 backup_true_volumes = [v for v in backup_true_volumes0 if ("frequency" in v) and ("retention" in v)]
 
-cirrus_snapshots = [s for s in snapshots if tag_eqic(s, "cirrus", "true")]
+cloudsnap_snapshots = [s for s in snapshots if tag_eqic(s, "cloudsnap", "true")]
 
 now = datetime.utcnow()
 snapshots_to_delete = []
@@ -87,7 +87,7 @@ volumes_to_snapshot = []
 for v in backup_true_volumes:
     retention_cutoff_time = now - timedelta(days=v["retention"])
     frequency_cutoff_time = now - timedelta(days=v["frequency"])
-    vsnapshots = [s for s in cirrus_snapshots if s["id"] == v["id"]]
+    vsnapshots = [s for s in cloudsnap_snapshots if s["id"] == v["id"]]
     if len(vsnapshots) > 1:  # never delete a snapshot for a vol if it's the only one
         to_delete = [s for s in vsnapshots if (parse_start_time(s['startTime']) < retention_cutoff_time)]
         snapshots_to_delete = snapshots_to_delete + to_delete

@@ -34,14 +34,14 @@ around before being deleted.
     The `Frequency` tag indicates how often a volume should be snapshotted;
     its value should be a positive number (integer or floating point) which
     indicates a number of days.  Whenever cloudsnap runs, it will initiate a
-    snapshot of any volume whose most recent snapshot (with CIRRUS=true)
+    snapshot of any volume whose most recent snapshot (with CLOUDSNAP=true)
     is older than `Frequency` days.
 
   * `Retention` 
     The `Retention` tag indicates how long snapshots should be kept;
     its value should be a positive number (integer or floating point) which
     indicates a number of days.  Whenever cloudsnap runs, it will delete
-    any snapshot for the volume (with CIRRUS=true) which is older than
+    any snapshot for the volume (with CLOUDSNAP=true) which is older than
     `Retention` days, except that it will never delete the last snapshot for
     a volume.
 
@@ -62,9 +62,9 @@ good idea) to run it more often than that.
 
 ## Snapshot Tags
 
-Cloudsnap assigns the tag value CIRRUS=true to any snapshots it creates,
-and it only considers snapshots for which CIRRUS=true in deciding which
+Cloudsnap assigns the tag value CLOUDSNAP=true to any snapshots it creates,
+and it only considers snapshots for which CLOUDSNAP=true in deciding which
 snapshots to create and/or delete.  So you can feel free to manually
 create whatever snapshots you want without risk of cloudsnap deleting them
-or getting confused by them, as long as you don't give them a CIRRUS=true
+or getting confused by them, as long as you don't give them a CLOUDSNAP=true
 tag.
