@@ -22,12 +22,12 @@ delete any that need to be deleted.
 ## Configuration Tags
 
 Use the following tags on your EBS volumes to determine which volumes
-get snapshotted, how often, nd for how long those snapshots are kept
+get snapshotted, how often, and for how long those snapshots are kept
 around before being deleted.
 
   * `Backup`  
     Set the `Backup` tag to `true` (the word "true" spelled out) to indicate
-    that snapshots should be made on a volume.  Cloudsnap will completely
+    that snapshots should be made for a volume.  Cloudsnap will completely
     ignore any volumes that do not have a `Backup` tag value of `true`.
     
   * `Frequency`  
@@ -50,7 +50,7 @@ matter how you capitalize them.
 
 ## Operating Frequency
 
-Each time it runs, it decides which volumes to create new snapshots
+Each time cloudsnap runs, it decides which volumes to create new snapshots
 for, if any, and which pre-existing snapshots should be deleted,
 according to the above described tags and rules, and initiates the
 commands to create and/or delete those snapshots.  If there are no
