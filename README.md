@@ -25,19 +25,19 @@ Use the following tags on your EBS volumes to determine which volumes
 get snapshotted, how often, nd for how long those snapshots are kept
 around before being deleted.
 
-  * `Backup` 
+  * `Backup`  
     Set the `Backup` tag to `true` (the word "true" spelled out) to indicate
     that snapshots should be made on a volume.  Cloudsnap will completely
     ignore any volumes that do not have a `Backup` tag value of `true`.
     
-  * `Frequency` 
+  * `Frequency`  
     The `Frequency` tag indicates how often a volume should be snapshotted;
     its value should be a positive number (integer or floating point) which
     indicates a number of days.  Whenever cloudsnap runs, it will initiate a
     snapshot of any volume whose most recent snapshot (with CLOUDSNAP=true)
     is older than `Frequency` days.
 
-  * `Retention` 
+  * `Retention`  
     The `Retention` tag indicates how long snapshots should be kept;
     its value should be a positive number (integer or floating point) which
     indicates a number of days.  Whenever cloudsnap runs, it will delete
