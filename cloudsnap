@@ -3,7 +3,7 @@
 import json, subprocess, sys, re, argparse, os
 import itertools as it
 from datetime import datetime, timedelta
-import mock
+#import mock
 
 parser = argparse.ArgumentParser();
 
@@ -16,8 +16,8 @@ if args.max_snapshots is not None:
     max_snapshots = args.max_snapshots[0]
 
 def system(cmd):
-    print cmd
-    #return os.system(cmd)
+    #print cmd
+    return os.system(cmd)
 
 def bash_command(command):
     """Run command in a bash subshell, and return its output as a string"""
@@ -57,9 +57,11 @@ def newest_snapshot_time(snapshots):
     return parse_start_time(a[0]['startTime'])
 
 def delete_snapshot(s):
+    print "deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
     system("cirrus ebs deletess %s" % s['snapshotId'])
 
 def create_snapshot(v):
+    print "creating new snapshot of volume %s" % v['id']
     system("cirrus ebs ss %s" % v['id'])
 
 volumes = dictify_tags(json.loads(bash_command("cirrus -jj ebs ls")))
@@ -101,20 +103,3 @@ for v in volumes_to_snapshot:
 
 for s in snapshots_to_delete:
     delete_snapshot(s)
-
-
-## # print datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-## 
-## # print snapshots[0]['startTime'] # 2014-08-04T02:49:28.000Z
-## 
-## print "2014-08-04T02:49:28.000Z"[:19]
-## 
-## d = datetime.strptime("2014-08-04T02:49:28.000Z"[:19], "%Y-%m-%dT%H:%M:%S")
-## 
-## print d
-## 
-## d2 = d - timedelta(days=5)
-## 
-## print d2
-## 
-## # date_object = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
