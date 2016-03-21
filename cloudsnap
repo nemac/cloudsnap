@@ -1,0 +1,120 @@
+#! /usr/bin/python
+
+import json, subprocess, sys, re, argparse, os
+import itertools as it
+from datetime import datetime, timedelta
+import mock
+
+parser = argparse.ArgumentParser();
+
+parser.add_argument('-m', '--max-snapshots', type=int, nargs=1, help='start at most MAX_SNAPSHOTS')
+
+args = parser.parse_args()
+
+max_snapshots = None
+if args.max_snapshots is not None:
+    max_snapshots = args.max_snapshots[0]
+
+def system(cmd):
+    print cmd
+    #return os.system(cmd)
+
+def bash_command(command):
+    """Run command in a bash subshell, and return its output as a string"""
+    return subprocess.Popen(['/bin/bash', '-c', command],
+                            stdout=subprocess.PIPE).communicate()[0].strip()
+
+def dictify_tags(objs):
+    for obj in objs:
+        if "tags" in obj:
+            tags = {}
+            for tag in obj["tags"]:
+                tags[tag["Key"].lower()] = tag["Value"]
+            obj["tags"] = tags
+    return objs
+
+def tag_eq(obj, name, value):
+    return ("tags" in obj) and (name in obj["tags"]) and (obj["tags"][name] == value)
+
+def tag_eqic(obj, name, value):
+    return ("tags" in obj) and (name in obj["tags"]) and (obj["tags"][name].lower() == value.lower())
+
+def parse_start_time(startTime):
+    return datetime.strptime(startTime[:19], "%Y-%m-%dT%H:%M:%S")
+
+def set_float_from_tag(obj, name):
+    if ("tags" in obj) and (name in obj["tags"]):
+        try:
+            val = float(obj["tags"][name])
+            obj[name] = val
+        except:
+            pass
+
+def newest_snapshot_time(snapshots):
+    if len(snapshots) == 0:
+        return None
+    a = sorted(snapshots, key = lambda s: s['startTime'], reverse=True)
+    return parse_start_time(a[0]['startTime'])
+
+def delete_snapshot(s):
+    system("cirrus ebs deletess %s" % s['snapshotId'])
+
+def create_snapshot(v):
+    system("cirrus ebs ss %s" % v['id'])
+
+volumes = dictify_tags(json.loads(bash_command("cirrus -jj ebs ls")))
+snapshots = dictify_tags(json.loads(bash_command("cirrus -jj ebs listss")))
+#volumes = dictify_tags(mock.volumes)
+#snapshots = dictify_tags(mock.snapshots)
+
+backup_true_volumes0 = [v for v in volumes if tag_eqic(v, "backup", "true")]
+for v in backup_true_volumes0:
+    set_float_from_tag(v, "frequency")
+    set_float_from_tag(v, "retention")
+    if "frequency" not in v:
+        print "warning: 'Frequency' tag missing or bad value for volume %s; not backing up this volume" % v['id']
+    if "retention" not in v:
+        print "warning: 'Retention' tag missing or bad value for volume %s; not backing up this volume" % v['id']
+backup_true_volumes = [v for v in backup_true_volumes0 if ("frequency" in v) and ("retention" in v)]
+
+cirrus_snapshots = [s for s in snapshots if tag_eqic(s, "cirrus", "true")]
+
+now = datetime.utcnow()
+snapshots_to_delete = []
+volumes_to_snapshot = []
+for v in backup_true_volumes:
+    retention_cutoff_time = now - timedelta(days=v["retention"])
+    frequency_cutoff_time = now - timedelta(days=v["frequency"])
+    vsnapshots = [s for s in cirrus_snapshots if s["id"] == v["id"]]
+    if len(vsnapshots) > 1:  # never delete a snapshot for a vol if it's the only one
+        to_delete = [s for s in vsnapshots if (parse_start_time(s['startTime']) < retention_cutoff_time)]
+        snapshots_to_delete = snapshots_to_delete + to_delete
+    newest_snap_time = newest_snapshot_time(vsnapshots)
+    if (newest_snap_time is None or newest_snap_time < frequency_cutoff_time):
+        volumes_to_snapshot.append(v)
+
+if max_snapshots is not None:
+    snapshots_to_delete = snapshots_to_delete[:max_snapshots]
+
+for v in volumes_to_snapshot:
+    create_snapshot(v)
+
+for s in snapshots_to_delete:
+    delete_snapshot(s)
+
+
+## # print datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+## 
+## # print snapshots[0]['startTime'] # 2014-08-04T02:49:28.000Z
+## 
+## print "2014-08-04T02:49:28.000Z"[:19]
+## 
+## d = datetime.strptime("2014-08-04T02:49:28.000Z"[:19], "%Y-%m-%dT%H:%M:%S")
+## 
+## print d
+## 
+## d2 = d - timedelta(days=5)
+## 
+## print d2
+## 
+## # date_object = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
