@@ -45,8 +45,18 @@ around before being deleted.
     `Retention` days, except that it will never delete the last snapshot for
     a volume.
     
-Note: cloudsnap ignores case when looking for the above tags, so it doesn't
+Cloudsnap ignores case when looking for the above tags, so it doesn't
 matter how you capitalize them.
+
+Note that `Frequency` is only used for determining when to make a new
+snapshot for a volume, and `Retention` is only used for determinging
+when to delete a snapshot.  So, for example, if you have a volume whose
+`Frequency` has been set to 1 day for a while, so that you have a collection
+of snapshots spaced one day apart throughout its retention period, and you
+change the frequency to 7 days, cloudsnap does not delete any snapshots
+to reduce the frequency of the existing snapshot collection to 7 days ---
+all existing snapshots will still be retained until the end of the retention
+period.
 
 ## Operating Frequency
 
