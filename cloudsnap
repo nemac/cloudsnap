@@ -60,9 +60,10 @@ def delete_snapshot(s):
     print "deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
     system("cirrus ebs deletess %s" % s['snapshotId'])
 
-def create_snapshot(v):
+def create_snapshot(v, nowstring):
     print "creating new snapshot of volume %s" % v['id']
     system("cirrus ebs ss %s --tags CLOUDSNAP=true" % v['id'])
+    system("cirrus ebs settag %s CLOUDSNAPPED '%s'" % (v['id'], nowstring))
 
 volumes = dictify_tags(json.loads(bash_command("cirrus -jj ebs ls")))
 snapshots = dictify_tags(json.loads(bash_command("cirrus -jj ebs listss")))
@@ -82,6 +83,7 @@ backup_true_volumes = [v for v in backup_true_volumes0 if ("frequency" in v) and
 cloudsnap_snapshots = [s for s in snapshots if tag_eqic(s, "cloudsnap", "true")]
 
 now = datetime.utcnow()
+nowstring = now.strftime("%Y-%m-%d--%H-%M-%S")
 snapshots_to_delete = []
 volumes_to_snapshot = []
 for v in backup_true_volumes:
@@ -99,7 +101,7 @@ if max_snapshots is not None:
     snapshots_to_delete = snapshots_to_delete[:max_snapshots]
 
 for v in volumes_to_snapshot:
-    create_snapshot(v)
+    create_snapshot(v, nowstring)
 
 for s in snapshots_to_delete:
     delete_snapshot(s)
