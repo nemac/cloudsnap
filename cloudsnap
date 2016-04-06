@@ -11,13 +11,9 @@ parser.add_argument('-m', '--max-snapshots', type=int, nargs=1, help='start at m
 
 args = parser.parse_args()
 
-max_snapshots = None
-if args.max_snapshots is not None:
-    max_snapshots = args.max_snapshots[0]
-
 def system(cmd):
-    #print cmd
-    return os.system(cmd)
+    print cmd
+    #return os.system(cmd)
 
 def bash_command(command):
     """Run command in a bash subshell, and return its output as a string"""
@@ -50,11 +46,17 @@ def set_float_from_tag(obj, name):
         except:
             pass
 
-def newest_snapshot_time(snapshots):
+def sort_snapshots_by_time(snapshots):
+    # sorts a list of snapshots by startTime, with newest first ([0] entry will be newsest)
     if len(snapshots) == 0:
+        return snapshots
+    sorted(snapshots, key = lambda s: s['startTime'], reverse=True)
+    return snapshots
+
+def newest_snapshot_time(sorted_snapshots):
+    if len(sorted_snapshots) == 0:
         return None
-    a = sorted(snapshots, key = lambda s: s['startTime'], reverse=True)
-    return parse_start_time(a[0]['startTime'])
+    return parse_start_time(sorted_snapshots[0]['startTime'])
 
 def delete_snapshot(s):
     print "deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
@@ -89,19 +91,19 @@ volumes_to_snapshot = []
 for v in backup_true_volumes:
     retention_cutoff_time = now - timedelta(days=v["retention"])
     frequency_cutoff_time = now - timedelta(days=v["frequency"])
-    vsnapshots = [s for s in cloudsnap_snapshots if s["id"] == v["id"]]
-    if len(vsnapshots) > 1:  # never delete a snapshot for a vol if it's the only one
-        to_delete = [s for s in vsnapshots if (parse_start_time(s['startTime']) < retention_cutoff_time)]
-        snapshots_to_delete = snapshots_to_delete + to_delete
+    vsnapshots = sort_snapshots_by_time([s for s in cloudsnap_snapshots if s["id"] == v["id"]])
     newest_snap_time = newest_snapshot_time(vsnapshots)
+    if len(vsnapshots) > 1:
+        # note use of vsnapshots[1:] below; we never delete the most recent snapshot for a vol
+        to_delete = [s for s in vsnapshots[1:] if (parse_start_time(s['startTime']) < retention_cutoff_time)]
+        if len(to_delete) > 0:
+            snapshots_to_delete = snapshots_to_delete + to_delete
     if (newest_snap_time is None or newest_snap_time < frequency_cutoff_time):
         volumes_to_snapshot.append(v)
-
-if max_snapshots is not None:
-    snapshots_to_delete = snapshots_to_delete[:max_snapshots]
 
 for v in volumes_to_snapshot:
     create_snapshot(v, nowstring)
 
 for s in snapshots_to_delete:
     delete_snapshot(s)
+ 
