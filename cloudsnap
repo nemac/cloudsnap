@@ -59,13 +59,16 @@ def newest_snapshot_time(sorted_snapshots):
     return parse_start_time(sorted_snapshots[0]['startTime'])
 
 def delete_snapshot(s):
-    print "deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
-    system("cirrus ebs deletess %s" % s['snapshotId'])
+    print "MOCK: deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
+    ###!! print "deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
+    ###!! system("cirrus ebs deletess %s" % s['snapshotId'])
 
 def create_snapshot(v, nowstring):
-    print "creating new snapshot of volume %s" % v['id']
-    system("cirrus ebs ss %s --tags CLOUDSNAP=true" % v['id'])
-    system("cirrus ebs settag %s CLOUDSNAPPED '%s'" % (v['id'], nowstring))
+    print "MOCK: creating new snapshot of volume %s (%s)" % (v['name'], v['id'])
+    print "MOCK:   reason is: %s" % v['snapreason']
+    ###!! print "creating new snapshot of volume %s" % v['id']
+    ###!! system("cirrus ebs ss %s --tags CLOUDSNAP=true" % v['id'])
+    ###!! system("cirrus ebs settag %s CLOUDSNAPPED '%s'" % (v['id'], nowstring))
 
 volumes = dictify_tags(json.loads(bash_command("cirrus -jj ebs ls")))
 snapshots = dictify_tags(json.loads(bash_command("cirrus -jj ebs listss")))
@@ -81,8 +84,10 @@ for v in backup_true_volumes0:
     if "retention" not in v:
         print "warning: 'Retention' tag missing or bad value for volume %s; not backing up this volume" % v['id']
 backup_true_volumes = [v for v in backup_true_volumes0 if ("frequency" in v) and ("retention" in v)]
-
 cloudsnap_snapshots = [s for s in snapshots if tag_eqic(s, "cloudsnap", "true")]
+
+print "backup_true_volumes=", backup_true_volumes
+print "cloudsnap_snapshots=", cloudsnap_snapshots
 
 now = datetime.utcnow()
 nowstring = now.strftime("%Y-%m-%d--%H-%M-%S")
@@ -91,7 +96,9 @@ volumes_to_snapshot = []
 for v in backup_true_volumes:
     retention_cutoff_time = now - timedelta(days=v["retention"])
     frequency_cutoff_time = now - timedelta(days=v["frequency"])
+    print "examining volume %s (%s) with retention_cutoff_time=%s, frequency_cutoff_time=%s" % (v['name'], v['id'], retention_cutoff_time,frequency_cutoff_time)
     vsnapshots = sort_snapshots_by_time([s for s in cloudsnap_snapshots if s["id"] == v["id"]])
+    print "vsnapshots=", vsnapshots
     newest_snap_time = newest_snapshot_time(vsnapshots)
     if len(vsnapshots) > 1:
         # note use of vsnapshots[1:] below; we never delete the most recent snapshot for a vol
@@ -100,6 +107,10 @@ for v in backup_true_volumes:
             snapshots_to_delete = snapshots_to_delete + to_delete
     if (newest_snap_time is None or newest_snap_time < frequency_cutoff_time):
         volumes_to_snapshot.append(v)
+        if newest_snap_time is None:
+            v['snapreason'] = "newest_snap_time is None"
+        else:
+            v['snapreason'] = "newest_snap_time=%s < frequency_cutoff_time=%s" % (newest_snap_time, frequency_cutoff_time)
 
 for v in volumes_to_snapshot:
     create_snapshot(v, nowstring)
