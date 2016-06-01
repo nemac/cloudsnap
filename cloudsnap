@@ -59,16 +59,14 @@ def newest_snapshot_time(sorted_snapshots):
     return parse_start_time(sorted_snapshots[0]['startTime'])
 
 def delete_snapshot(s):
-    print "MOCK: deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
-    ###!! print "deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
-    ###!! system("cirrus ebs deletess %s" % s['snapshotId'])
+    print "deleting snapshot %s of volume %s" % (s['snapshotId'], s['id'])
+    system("cirrus ebs deletess %s" % s['snapshotId'])
 
 def create_snapshot(v, nowstring):
-    print "MOCK: creating new snapshot of volume %s (%s)" % (v['name'], v['id'])
-    print "MOCK:   reason is: %s" % v['snapreason']
-    ###!! print "creating new snapshot of volume %s" % v['id']
-    ###!! system("cirrus ebs ss %s --tags CLOUDSNAP=true" % v['id'])
-    ###!! system("cirrus ebs settag %s CLOUDSNAPPED '%s'" % (v['id'], nowstring))
+    print "creating new snapshot of volume %s (%s)" % (v['name'], v['id'])
+    print "  reason is: %s" % v['snapreason']
+    system("cirrus ebs ss %s --tags CLOUDSNAP=true" % v['id'])
+    system("cirrus ebs settag %s CLOUDSNAPPED '%s'" % (v['id'], nowstring))
 
 volumes = dictify_tags(json.loads(bash_command("cirrus -jj ebs ls")))
 snapshots = dictify_tags(json.loads(bash_command("cirrus -jj ebs listss")))
