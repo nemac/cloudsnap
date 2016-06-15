@@ -50,8 +50,7 @@ def sort_snapshots_by_time(snapshots):
     # sorts a list of snapshots by startTime, with newest first ([0] entry will be newsest)
     if len(snapshots) == 0:
         return snapshots
-    sorted(snapshots, key = lambda s: s['startTime'], reverse=True)
-    return snapshots
+    return sorted(snapshots, key = lambda s: s['startTime'], reverse=True)
 
 def newest_snapshot_time(sorted_snapshots):
     if len(sorted_snapshots) == 0:
